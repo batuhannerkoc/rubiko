@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Batuhan & Ruby Platformer</title>
+<title>Batuhan & Ruby Platformer - Mobile Easy</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;touch-action:manipulation}
 body{min-height:100vh;background:radial-gradient(circle at top,#2b0a4e,#070313 72%);display:grid;place-items:center;padding:14px;font-family:monospace;color:#f9a8d4}
@@ -15,10 +15,24 @@ body{min-height:100vh;background:radial-gradient(circle at top,#2b0a4e,#070313 7
 #musicBtn:active{background:#4c1d95}
 #gameCanvas{display:block;width:100%;height:auto;image-rendering:pixelated;background:#0f0520}
 #msg{min-height:38px;background:#120720;border-top:1px solid #5a2d8a;padding:8px 14px;text-align:center;font-size:12px;color:#f9a8d4;letter-spacing:.4px;line-height:1.35;display:grid;place-items:center}
-#controls{display:flex;justify-content:center;gap:8px;padding:9px;background:#120720;user-select:none;-webkit-user-select:none}
-#controls button{background:#2d0f4e;border:1px solid #7c3aed;color:#e9d5ff;font-size:11px;padding:8px 16px;border-radius:7px;cursor:pointer;font-family:monospace;letter-spacing:1px;min-width:84px;box-shadow:inset 0 -2px 0 rgba(0,0,0,.25);touch-action:none;-webkit-tap-highlight-color:transparent}
-#controls button:active,#controls button.pressed{background:#4c1d95;transform:translateY(1px)}
-@media(max-width:720px){body{padding:6px;place-items:start center}#wrap{border-radius:14px}#hud{padding:8px 9px;gap:6px}#hud span,#hud button{font-size:10px}.hideSmall{display:none}#msg{font-size:11px;min-height:42px}#controls{position:sticky;bottom:0;z-index:4;display:grid;grid-template-columns:1fr 1fr 1.25fr;gap:10px;padding:12px 12px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(180deg,#120720,#1a0a2e)}#controls button{min-width:0;min-height:60px;padding:10px 8px;border-radius:14px;font-size:14px;font-weight:bold}}
+#controls{display:flex;justify-content:center;gap:10px;padding:9px;background:#120720;user-select:none;-webkit-user-select:none}
+#movePad{display:flex;gap:10px}
+#controls button{background:#2d0f4e;border:1px solid #7c3aed;color:#e9d5ff;font-size:12px;padding:9px 18px;border-radius:8px;cursor:pointer;font-family:monospace;letter-spacing:1px;min-width:92px;box-shadow:inset 0 -2px 0 rgba(0,0,0,.25),0 4px 14px rgba(0,0,0,.18);touch-action:none;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+#controls button:active,#controls button.pressed{background:#4c1d95;transform:translateY(1px);box-shadow:inset 0 2px 0 rgba(0,0,0,.25)}
+#jumpBtn{min-width:118px}
+@media(max-width:720px){
+  body{padding:6px 6px 132px;place-items:start center;overflow-x:hidden}
+  #wrap{border-radius:14px;width:100%}
+  #hud{padding:8px 9px;gap:6px}
+  #hud span,#hud button{font-size:10px}
+  .hideSmall{display:none}
+  #msg{font-size:11px;min-height:42px;padding:8px 10px}
+  #controls{position:fixed;left:0;right:0;bottom:0;z-index:20;display:grid;grid-template-columns:1.35fr 1fr;gap:14px;padding:12px 14px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(180deg,rgba(18,7,32,.92),#120720 28%,#1a0a2e);border-top:1px solid #5a2d8a;box-shadow:0 -14px 38px rgba(0,0,0,.38)}
+  #movePad{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  #controls button{min-width:0;min-height:78px;padding:10px 8px;border-radius:22px;font-size:15px;font-weight:bold;border-width:2px}
+  #jumpBtn{min-height:92px;font-size:16px;background:#3b1060}
+}
+@media(max-width:380px){#controls{gap:10px;padding-left:10px;padding-right:10px}#controls button{min-height:72px;font-size:13px}#jumpBtn{min-height:86px}}
 </style>
 </head>
 <body>
@@ -31,10 +45,12 @@ body{min-height:100vh;background:radial-gradient(circle at top,#2b0a4e,#070313 7
   </div>
   <canvas id="gameCanvas" width="640" height="320"></canvas>
   <div id="msg">Press Enter / tap the screen to start</div>
-  <div id="controls">
-    <button id="leftBtn">&#9664; LEFT</button>
-    <button id="jumpBtn">&#9650; JUMP</button>
-    <button id="rightBtn">RIGHT &#9654;</button>
+  <div id="controls" aria-label="Mobile controls">
+    <div id="movePad">
+      <button id="leftBtn" aria-label="Move left">&#9664; LEFT</button>
+      <button id="rightBtn" aria-label="Move right">RIGHT &#9654;</button>
+    </div>
+    <button id="jumpBtn" aria-label="Jump">&#9650; JUMP</button>
   </div>
 </div>
 
@@ -44,6 +60,7 @@ const ctx=canvas.getContext('2d');
 ctx.imageSmoothingEnabled=false;
 const W=640,H=320;
 const keys={left:false,right:false,up:false};
+const mobileAssist=()=>window.matchMedia('(pointer: coarse)').matches||window.innerWidth<=720;
 
 const LOVE_MSGS=[
   "You are my whole universe, Ruby!",
@@ -97,13 +114,13 @@ const ruby={x:LEVEL_W-68,y:258,w:14,h:22,blink:0};
 const ZOE_START_X=ZOE_PLATFORM.x+78;
 const ZOE_START_Y=ZOE_PLATFORM.y-18;
 let zoe={x:ZOE_START_X,y:ZOE_START_Y,w:20,h:18,hp:3,maxHp:3,dir:-1,spd:.9,hitTimer:0,projectiles:[],shootTimer:0,dashTimer:0,dashCd:125,phase:1,angry:0};
-let player={x:40,y:240,w:12,h:20,vx:0,vy:0,onGround:false,dir:1,frame:0,frameTimer:0,coyote:0,landed:false};
+let player={x:40,y:240,w:12,h:20,vx:0,vy:0,onGround:false,dir:1,frame:0,frameTimer:0,coyote:0,jumpBuffer:0,landed:false};
 let cam={x:0};
 
 function rectOverlap(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
 function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
 function rand(a,b){return a+Math.random()*(b-a)}
-function resetPlayer(){player.x=40;player.y=240;player.vx=0;player.vy=0;player.onGround=false;player.coyote=0;cam.x=0}
+function resetPlayer(){player.x=40;player.y=240;player.vx=0;player.vy=0;player.onGround=false;player.coyote=0;player.jumpBuffer=0;cam.x=0}
 function setMsg(text,t=140){showMsg=text;msgTimer=t;document.getElementById('msg').textContent=text}
 function updateHud(){document.getElementById('score').textContent='HEARTS: '+hearts+'/'+heartItems.length;document.getElementById('lives').textContent='LIVES: '+lives}
 
@@ -245,8 +262,12 @@ function updatePlayer(dt){
   if(keys.right){player.vx+=.38*dt;player.dir=1}
   if(!keys.left&&!keys.right) player.vx*=Math.pow(.78,dt);
   player.vx=clamp(player.vx,-2.75,2.75);
-  if(keys.up&&(player.onGround||player.coyote>0)&&!jumpPressed){player.vy=-6.45;jumpPressed=true;player.onGround=false;player.coyote=0;sfx('jump');emit(player.x+6,player.y+20,7,'dust')}
+  if(keys.up&&!jumpPressed){player.jumpBuffer=mobileAssist()?14:9;jumpPressed=true}
   if(!keys.up) jumpPressed=false;
+  if(player.jumpBuffer>0) player.jumpBuffer-=dt;
+  if(player.jumpBuffer>0&&(player.onGround||player.coyote>0)){
+    player.vy=mobileAssist()?-6.55:-6.45;player.jumpBuffer=0;player.onGround=false;player.coyote=0;sfx('jump');emit(player.x+6,player.y+20,7,'dust')
+  }
   if(!keys.up&&player.vy<-2.2) player.vy+=.16*dt;
   player.vy+=.32*dt;
   player.x+=player.vx*dt;player.y+=player.vy*dt;
@@ -261,7 +282,7 @@ function updatePlayer(dt){
       else if(player.vx<0){player.x=p.x+p.w;player.vx=0}
     }
   });
-  if(player.onGround){player.coyote=7;if(!wasGround&&Math.abs(player.vy)<.1){sfx('land');emit(player.x+6,player.y+20,5,'dust')}} else player.coyote-=dt;
+  if(player.onGround){player.coyote=mobileAssist()?11:7;if(!wasGround&&Math.abs(player.vy)<.1){sfx('land');emit(player.x+6,player.y+20,5,'dust')}} else player.coyote-=dt;
   player.x=clamp(player.x,0,LEVEL_W-player.w);
   if(player.y>H+40) hurtPlayer();
   if(Math.abs(player.vx)>.8&&player.onGround&&Math.floor(animT)%9===0) emit(player.x+6,player.y+20,1,'dust');
@@ -278,26 +299,30 @@ function updateZoe(dt){
     const preferred=zoe.phase===2?58:72;
     if(Math.abs(dist)>preferred) zoe.x+=zoe.dir*(zoe.spd+(zoe.phase===2?.22:0))*dt;
     zoe.shootTimer+=dt;zoe.dashCd-=dt;
-    const shootEvery=zoe.phase===2?82:104;
+    const shootEvery=mobileAssist()?(zoe.phase===2?118:142):(zoe.phase===2?82:104);
     if(zoe.shootTimer>shootEvery){
       zoe.shootTimer=0;sfx('hit');
       const shots=1;
       for(let i=0;i<shots;i++){
         const dx=player.x-zoe.x,dy=player.y-zoe.y+(i?18:-4),d=Math.sqrt(dx*dx+dy*dy)||1;
-        zoe.projectiles.push({x:zoe.x+10,y:zoe.y+9,vx:(dx/d)*(zoe.phase===2?2.45:2.2),vy:(dy/d)*(zoe.phase===2?2.45:2.2),life:130,phase:zoe.phase});
+        const pSpeed=mobileAssist()?(zoe.phase===2?1.95:1.75):(zoe.phase===2?2.45:2.2);
+        zoe.projectiles.push({x:zoe.x+10,y:zoe.y+9,vx:(dx/d)*pSpeed,vy:(dy/d)*pSpeed,life:mobileAssist()?150:130,phase:zoe.phase});
       }
     }
-    if(zoe.phase===2&&zoe.dashCd<=0){zoe.dashTimer=11;zoe.dashCd=145;screenShake=5;setMsg('Zoe is angry!',70)}
+    if(zoe.phase===2&&zoe.dashCd<=0){zoe.dashTimer=mobileAssist()?8:11;zoe.dashCd=mobileAssist()?185:145;screenShake=5;setMsg('Zoe is angry!',70)}
   }
-  if(zoe.dashTimer>0){zoe.x+=zoe.dir*2.65*dt;zoe.dashTimer-=dt;emit(zoe.x+10,zoe.y+16,1,'dust')}
+  if(zoe.dashTimer>0){zoe.x+=zoe.dir*(mobileAssist()?1.9:2.65)*dt;zoe.dashTimer-=dt;emit(zoe.x+10,zoe.y+16,1,'dust')}
   zoe.x=clamp(zoe.x,ZOE_PLATFORM.x+8,ZOE_PLATFORM.x+ZOE_PLATFORM.w-zoe.w-8);
   zoe.projectiles=zoe.projectiles.filter(p=>{
     p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;
-    if(rectOverlap({x:p.x-3,y:p.y-3,w:6,h:6},{x:player.x,y:player.y,w:player.w,h:player.h})){hurtPlayer();return false}
+    const pr=mobileAssist()?2:3;
+    const phit=mobileAssist()?{x:player.x+2,y:player.y+2,w:player.w-4,h:player.h-4}:{x:player.x,y:player.y,w:player.w,h:player.h};
+    if(rectOverlap({x:p.x-pr,y:p.y-pr,w:pr*2,h:pr*2},phit)){hurtPlayer();return false}
     return p.life>0&&p.y<H+20&&p.x>0&&p.x<LEVEL_W;
   });
-  const stompBox={x:player.x,y:player.y+player.h-4,w:player.w,h:7};
-  const zoeHead={x:zoe.x,y:zoe.y,w:zoe.w,h:6};
+  const stompPad=mobileAssist()?7:0;
+  const stompBox={x:player.x-stompPad,y:player.y+player.h-(mobileAssist()?8:4),w:player.w+stompPad*2,h:mobileAssist()?11:7};
+  const zoeHead={x:zoe.x-2,y:zoe.y,w:zoe.w+4,h:mobileAssist()?10:6};
   const body={x:zoe.x,y:zoe.y,w:zoe.w,h:zoe.h};
   const stomping=player.vy>0&&rectOverlap(stompBox,zoeHead);
   if(stomping&&zoe.hitTimer<=0){
@@ -358,8 +383,8 @@ function drawMenu(){
   ctx.fillStyle='#f9a8d4';ctx.fillRect(W/2-70,152,140,22);
   ctx.fillStyle='#120720';ctx.font='bold 12px monospace';ctx.fillText('START GAME',W/2,167);
   ctx.fillStyle='#e879f9';ctx.font='10px monospace';ctx.fillText('Collect hearts  •  defeat Zoe  •  reach Ruby',W/2,199);
-  ctx.fillStyle='#c4b5fd';ctx.fillText('Arrow keys / WASD / big mobile buttons',W/2,218);
-  ctx.fillStyle='#a78bfa';ctx.fillText('Press Enter or tap the screen',W/2,244);
+  ctx.fillStyle='#c4b5fd';ctx.fillText('Arrow keys / WASD / huge mobile controls',W/2,218);
+  ctx.fillStyle='#a78bfa';ctx.fillText('Mobile assist: jump buffer + bigger stomp area',W/2,244);
   ctx.textAlign='left';
 }
 
@@ -389,12 +414,28 @@ canvas.addEventListener('click',()=>{if(state!=='playing')restart()});
 canvas.addEventListener('pointerdown',()=>{if(state!=='playing')restart()});
 
 function bindButton(id,key){
-  const b=document.getElementById(id);const on=()=>{keys[key]=true;b.classList.add('pressed')};const off=()=>{keys[key]=false;b.classList.remove('pressed')};
-  b.addEventListener('pointerdown',e=>{e.preventDefault();on()});
-  b.addEventListener('pointerup',off);b.addEventListener('pointercancel',off);b.addEventListener('pointerleave',off);
-  window.addEventListener('pointerup',off);window.addEventListener('blur',off);
+  const b=document.getElementById(id);
+  const activePointers=new Set();
+  const press=e=>{
+    e.preventDefault();
+    activePointers.add(e.pointerId);
+    keys[key]=true;
+    b.classList.add('pressed');
+    try{b.setPointerCapture(e.pointerId)}catch(_){ }
+  };
+  const release=e=>{
+    if(e&&e.pointerId!==undefined&&!activePointers.has(e.pointerId)) return;
+    if(e&&e.pointerId!==undefined) activePointers.delete(e.pointerId); else activePointers.clear();
+    if(activePointers.size===0){keys[key]=false;b.classList.remove('pressed')}
+  };
+  b.addEventListener('pointerdown',press);
+  b.addEventListener('pointerup',release);
+  b.addEventListener('pointercancel',release);
+  b.addEventListener('lostpointercapture',release);
+  window.addEventListener('blur',release);
 }
 bindButton('leftBtn','left');bindButton('rightBtn','right');bindButton('jumpBtn','up');
+
 document.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='a')keys.left=true;if(e.key==='ArrowRight'||e.key==='d')keys.right=true;if(e.key==='ArrowUp'||e.key===' '||e.key==='w'){keys.up=true;e.preventDefault()}if((e.key==='Enter'||e.key==='r')&&state!=='playing')restart()});
 document.addEventListener('keyup',e=>{if(e.key==='ArrowLeft'||e.key==='a')keys.left=false;if(e.key==='ArrowRight'||e.key==='d')keys.right=false;if(e.key==='ArrowUp'||e.key===' '||e.key==='w')keys.up=false});
 
